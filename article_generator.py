@@ -87,6 +87,10 @@ class ArticleGenerator:
 
         ref = {k: v for iv in interview for k, v in iv["references"].items()}
 
+        if not ref:
+            self.refences = None
+            return
+
         reference_docs = [
             Document(page_content=v, metadata={"source": k})
             for k, v in ref.items()
@@ -103,13 +107,17 @@ class ArticleGenerator:
 
 
     def retrieve(self, inputs: dict):        
-        docs = self.refences.invoke(inputs["topic"] + ": " + inputs["section"])
-        formatted = "\n".join(
-            [
-                f'<Document href="{doc.metadata["source"]}"/>\n{doc.page_content}\n</Document>'
-                for doc in docs
-            ]
-        )
+        formatted= ""
+
+        if self.refences:
+            docs = self.refences.invoke(inputs["topic"] + ": " + inputs["section"])
+            formatted = "\n".join(
+                [
+                    f'<Document href="{doc.metadata["source"]}"/>\n{doc.page_content}\n</Document>'
+                    for doc in docs
+                ]
+            )
+            
         return {"docs": formatted, **inputs}    
 
 

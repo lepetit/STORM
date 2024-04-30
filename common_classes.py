@@ -78,7 +78,7 @@ class Editor(BaseModel):
 
     @property
     def card(self) -> str:
-        return f"{self.name} - {self.role}, {self.affiliation}\n{self.description}"
+        return f"* {self.name} - {self.role}, {self.affiliation}\n    {self.description}"
 
 
 class Perspectives(BaseModel):

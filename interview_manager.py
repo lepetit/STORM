@@ -61,22 +61,10 @@ class InterviewManager:
         interview_graph = self.build_interview_graph(editorManager)
 
         for editor in self.perspectives.editors:
-            print(f"interview with {editor.card}")
+            print(f"\nInterview with {editor.card}")
             initial_state = self.initial_state(editor)
             outcome = interview_graph.invoke(initial_state)
-            print(outcome)
+            #print(outcome)
             outcomes.append(outcome)
 
         return outcomes
-
-        '''for step in interview_graph.stream(self.initial_state):
-            name = next(iter(step))
-            print(name, " -> ", str(step[name]["messages"])[:300])
-            if "WORK_DONE" in str(step):
-                print("WORK DONE")
-                final_step = step
-
-        if final_step == None:
-            final_step = step
-
-        return final_step'''
