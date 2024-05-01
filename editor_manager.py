@@ -12,7 +12,8 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMe
 from langchain_core.runnables import RunnableLambda, chain as as_runnable
 from langchain_core.runnables import RunnableConfig
 
-from common_classes import InterviewState
+from common_classes import WorkState, InterviewState
+
 from tools import search_engine
 
 
@@ -39,9 +40,8 @@ class AnswerWithCitations(BaseModel):
 
 
 class EditorManager:
-    def __init__(self, llm, editor_role):
-        self.llm = llm
-        self.editor_role = editor_role
+    def __init__(self, state: WorkState):
+
         self.gen_qn_prompt = ChatPromptTemplate.from_messages(
             [
                 (
@@ -73,9 +73,7 @@ class EditorManager:
             ]
         )
 
-        self.gen_queries_chain = self.gen_queries_prompt | ChatOpenAI(
-            model=llm.model_name
-        ).with_structured_output(Queries, include_raw=True)
+        self.gen_queries_chain = self.gen_queries_prompt | state.fast_llm.with_structured_output(Queries, include_raw=True)
 
         self.gen_answer_prompt = ChatPromptTemplate.from_messages(
             [
@@ -91,7 +89,7 @@ class EditorManager:
             ]
         )
 
-        self.gen_answer_chain = self.gen_answer_prompt | llm.with_structured_output(
+        self.gen_answer_chain = self.gen_answer_prompt | state.fast_llm.with_structured_output(
             AnswerWithCitations, include_raw=True
         ).with_config(run_name="GenerateAnswer")
 
@@ -119,14 +117,8 @@ class EditorManager:
         )
         result = gn_chain.invoke(state)
         return {"messages": [result]}
-    
-    #def generate_answer(self, messages):
-    #    queries = self.gen_queries_chain.invoke(
-    #        {"messages": messages}
-    #    )        
-    #    return queries
 
-    def gen_answer(self,
+    def generate_answer(self,
         state: InterviewState,
         config: Optional[RunnableConfig] = None,
         name: str = "SubjectMatterExpert",

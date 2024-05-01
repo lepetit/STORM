@@ -8,7 +8,7 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
 
-from common_classes import Subsection
+from common_classes import WorkState, Subsection
 
 class SubSection(BaseModel):
     subsection_title: str = Field(..., title="Title of the subsection")
@@ -44,8 +44,8 @@ class ArticleSection(BaseModel):
 
 
 class ArticleGenerator:
-    def  __init__(self, long_context_llm, role):
-        self.role = role
+    def  __init__(self, state : WorkState):
+        self.state = state
         
         self.section_writer_prompt = ChatPromptTemplate.from_messages(
             [
@@ -61,7 +61,7 @@ class ArticleGenerator:
         self.section_writer = (
             self.retrieve
             | self.section_writer_prompt
-            | long_context_llm.with_structured_output(ArticleSection)
+            | state.long_context_llm.with_structured_output(ArticleSection)
         )
 
 
@@ -80,12 +80,12 @@ class ArticleGenerator:
             ]
         )
 
-        self.writer = self.writer_prompt | long_context_llm | StrOutputParser()        
+        self.writer = self.writer_prompt | state.long_context_llm | StrOutputParser()        
 
-    def refences_lister(self, interview):
+    def refences_lister(self):
         embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
 
-        ref = {k: v for iv in interview for k, v in iv["references"].items()}
+        ref = {k: v for iv in self.state.interviews for k, v in iv["references"].items()}
 
         if not ref:
             self.refences = None
@@ -121,29 +121,29 @@ class ArticleGenerator:
         return {"docs": formatted, **inputs}    
 
 
-    def article_section_writer(self, topic, refined_outline):
+    def article_section_writer(self):
         sections = []
 
-        for section in refined_outline.sections:
+        for section in self.state.refined_outline.sections:
             print("Drafting ", section.section_title)
             write_section = self.section_writer.invoke(
                 {
-                    "outline": refined_outline.as_str,
+                    "outline": self.state.refined_outline.as_str,
                     "section": section.section_title,
-                    "role": self.role,
-                    "topic": topic,
+                    "role": self.state.role,
+                    "topic": self.state.topic,
                 }
             )
             sections.append(write_section)
 
         return sections
     
-    def write_article(self, topic, refined_outline):
+    def write_article(self):
         article = ""
 
-        sections = self.article_section_writer(topic, refined_outline)
+        sections = self.article_section_writer()
         draft = "\n\n".join([section.as_str for section in sections])
-        article = self.writer.invoke({"topic": topic, "draft": draft, "role" : self.role})
+        article = self.writer.invoke({"topic": self.state.topic, "draft": draft, "role" : self.state.role})
 
         return article, draft
     

@@ -1,10 +1,11 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from common_classes import Outline, RelatedSubjects
+from common_classes import WorkState, Outline
 
 
 class OutlineRefiner:
-    def __init__(self, long_context_llm):
+    def __init__(self, state : WorkState):
+        self.state = state
 
         self.refine_outline_prompt = ChatPromptTemplate.from_messages(
         [
@@ -26,20 +27,20 @@ class OutlineRefiner:
         )
 
         # Using turbo preview since the context can get quite long
-        self.refine_outline_chain = self.refine_outline_prompt | long_context_llm.with_structured_output(
+        self.refine_outline_chain = self.refine_outline_prompt | state.long_context_llm.with_structured_output(
             Outline
         )
 
-    def refine_outline(self, topic, initial_outline, interviews, role):
+    def refine_outline(self):
         all_messages = []
-        for interview in interviews:
+        for interview in self.state.interviews:
             all_messages.extend(interview['messages'])
 
         refined_outline = self.refine_outline_chain.invoke(
             {
-                "topic": topic,
-                "old_outline": initial_outline.as_str,
-                "role": role,
+                "topic": self.state.topic,
+                "old_outline": self.state.initial_outline.as_str,
+                "role": self.state.role,
                 "conversations": "\n\n".join(
                     f"### {m.name}\n\n{m.content}" for m in all_messages
                 ),

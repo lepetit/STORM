@@ -3,7 +3,7 @@ from langchain_core.messages import AIMessage, BaseMessage, HumanMessage, ToolMe
 from langgraph.graph import StateGraph, END
 
 from editor_manager import EditorManager
-from common_classes import InterviewState, Perspectives
+from common_classes import WorkState, InterviewState, Perspectives
 from tools import search_engine
 
 
@@ -11,9 +11,9 @@ from tools import search_engine
 class InterviewManager:
     max_num_turns = 5
 
-    def __init__(self, perspectives : Perspectives, topic : str):
-        self.perspectives : Perspectives = perspectives
-        self.topic : str = topic
+    def __init__(self, state : WorkState):
+        self.perspectives : Perspectives = state.perspectives
+        self.topic : str = state.topic
 
     def initial_state(self, editor):
         return {

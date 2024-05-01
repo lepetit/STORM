@@ -1,12 +1,19 @@
+
+import pickle
+
 from typing_extensions import TypedDict
 from typing import List, Optional
 
+#langchain
+from langchain_openai import ChatOpenAI
 from langchain_core.pydantic_v1 import validator
 from langchain_core.pydantic_v1 import BaseModel, Field
 from langchain_core.messages import AnyMessage
 from typing import Annotated, Sequence
 
 
+FAST_LLM = "gpt-3.5-turbo"
+LONG_CONTEXT_LLM= "gpt-3.5-turbo"  #SHOULD BE "gpt-4-turbo-preview"
 
 class Subsection(BaseModel):
     subsection_title: str = Field(..., title="Title of the subsection")
@@ -115,3 +122,46 @@ class InterviewState(TypedDict):
     messages: Annotated[List[AnyMessage], add_messages]
     references: Annotated[Optional[dict], update_references]
     editor: Annotated[Optional[Editor], update_editor]
+
+
+class WorkState():
+    pickle_file : str
+    topic : str
+    role : str
+    team_roles : str
+    initial_outline : Outline = None
+    related_subjects : RelatedSubjects = None
+    perspectives : Perspectives = None
+    interviews : List[InterviewState] = None
+    refined_outline : Outline = None
+    article_draft : str = None
+    article_final : str = None
+
+    fast_llm = ChatOpenAI(model=FAST_LLM)
+    long_context_llm = ChatOpenAI(model=LONG_CONTEXT_LLM)
+
+    def __init__(self, pickle_file : str, topic : str, role : str, team_roles : str):
+        self.pickle_file = pickle_file
+        self.topic = topic
+        self.role = role
+        self.team_roles = team_roles
+
+    def store_pickle(self):
+        with open(self.pickle_file, 'wb') as outp:
+            pickle.dump(self.initial_outline, outp, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.related_subjects, outp, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.perspectives, outp, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.interviews, outp, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.refined_outline, outp, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.article_draft, outp, pickle.HIGHEST_PROTOCOL)
+            pickle.dump(self.article_final, outp, pickle.HIGHEST_PROTOCOL)
+
+    def load_pickle(self):
+        with open(self.pickle_file, 'rb') as inp:
+            self.initial_outline = pickle.load(inp)
+            self.related_subjects = pickle.load(inp)
+            self.perspectives = pickle.load(inp)
+            self.interviews = pickle.load(inp)
+            self.refined_outline = pickle.load(inp)
+            self.article_draft = pickle.load(inp)
+            self.article_final = pickle.load(inp)
